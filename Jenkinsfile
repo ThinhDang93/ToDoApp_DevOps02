@@ -62,8 +62,12 @@ pipeline {
                 echo "🚀 Deploying stack locally..."
                 sh """
                     cd ${env.WORKSPACE}
-                    docker-compose pull
-                    docker-compose up -d --force-recreate
+                    # Down stack cũ trước (xóa containers, giữ volumes)
+                    docker-compose down --remove-orphans
+                    # Pull image mới từ DockerHub
+                    docker-compose pull mongodb
+                    # Khởi động lại toàn bộ stack
+                    docker-compose up -d
                 """
             }
         }
