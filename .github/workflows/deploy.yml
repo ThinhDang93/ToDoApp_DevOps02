@@ -1,6 +1,5 @@
 name: Build and Push Docker Images
 
-# Trigger: chạy khi push lên branch main
 on:
   push:
     branches:
@@ -8,53 +7,40 @@ on:
 
 jobs:
   build-and-push:
-    # Chạy trên máy ảo Ubuntu mới nhất của GitHub
     runs-on: ubuntu-latest
 
     steps:
-      # Bước 1: Checkout source code từ repo
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4        # v3 → v4
 
-      # Bước 2: Setup QEMU — cần thiết để build image cho nhiều platform
-      # (amd64, arm64) trên máy ubuntu-latest của GitHub (x86)
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
-      # Bước 3: Setup Docker Buildx — builder hỗ trợ multi-platform
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Bước 4: Login vào DockerHub bằng secrets đã tạo
       - name: Login to DockerHub
         uses: docker/login-action@v3
+
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # Bước 5: Build và push Backend image
       - name: Build and push Backend
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6   # v5 → v6
         with:
-          # Chỉ định context là thư mục backend
           context: ./backend
-          dockerfile: ./backend/Dockerfile
-          # Push lên DockerHub
           push: true
-          # Tag image: latest + commit SHA (để rollback nếu cần)
           tags: |
             thinhdang93/todo-backend-devops02:latest
             thinhdang93/todo-backend-devops02:${{ github.sha }}
-          # Cache layer giữa các lần build → nhanh hơn
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # Bước 6: Build và push Frontend image
       - name: Build and push Frontend
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6   # v5 → v6
         with:
           context: ./frontend
-          dockerfile: ./frontend/Dockerfile
           push: true
           tags: |
             thinhdang93/todo-frontend-devops02:latest
