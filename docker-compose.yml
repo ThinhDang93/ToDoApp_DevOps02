@@ -1,0 +1,71 @@
+version: "3.8"
+
+services:
+  # ── MongoDB ──────────────────────────────────────
+  mongodb:
+    image: mongo:6.0
+    # Đặt tên rõ ràng để dễ nhận biết
+    container_name: todo-mongodb-DEVOPS02
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      # Lưu data MongoDB vào named volume
+      # Data không mất khi container restart
+      - mongodb_data:/data/db
+    networks:
+      - todo-network
+
+  # ── Backend ──────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: todo-backend
+    restart: unless-stopped
+    ports:
+      - "8386:8386"
+    environment:
+      # Dùng tên service "mongodb" thay vì localhost
+      # Trong Docker network, các container gọi nhau bằng tên service
+      - MONGO_URI=mongodb://mongodb:27017/todoapp
+      - PORT=8386
+      - JWT_SECRET=devops02_secret_key_2026
+    depends_on:
+      # Đảm bảo mongodb khởi động trước backend
+      - mongodb
+    networks:
+      - todo-network
+
+  # ── Frontend ─────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Truyền API URL vào lúc build
+        # Thay YOUR_VPS_IP bằng IP thật khi deploy lên server
+        # Khi test local dùng localhost:8386
+        - REACT_APP_API_URL=http://localhost:8386/api
+    container_name: todo-frontend
+    restart: unless-stopped
+    ports:
+      # Map port 3000 của host vào port 80 của nginx trong container
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - todo-network
+
+# ── Volumes ──────────────────────────────────────
+volumes:
+  mongodb_data:
+    # Named volume được Docker quản lý
+    # Tồn tại độc lập với container lifecycle
+
+# ── Networks ─────────────────────────────────────
+networks:
+  todo-network:
+    # Bridge network cho phép các container giao tiếp nội bộ
+    # Isolated khỏi các container khác trên máy
+    driver: bridge
